@@ -5,6 +5,10 @@ from bs4 import SoupStrainer
 #Global variable base wikipedia url
 wikiBase = 'https://en.wikipedia.org'
 
+#Fetch random wikipedia article
+def getRandomArticle():
+	return requests.get(wikiBase+'/wiki/Special:Random').url[30:]
+
 def fetchIncomingLinks(url):
 	#So Wikipedia has a tool that shows what other articles link back to an article. It's essential for the bi directional algorithm
 	formattedURL = 'https://en.wikipedia.org/w/index.php?title=Special%3AWhatLinksHere&limit=5000&target={}&namespace=0'.format(url[6:])

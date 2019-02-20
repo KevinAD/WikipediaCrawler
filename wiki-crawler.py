@@ -1,5 +1,6 @@
 from frontier import *
 from webCrawlers import *
+from searchFunctions import *
 
 import requests, sys, time
 
@@ -8,110 +9,117 @@ def prettyPath(path):
 	for url in path:
 		print(url.replace("_"," ")[6:])
 
+#Print search parameters
+def printSearchParams():
+	algorithmNames = ['Bi Directional Breadth First', 'Breadth First']
+	print("Start URL: {}".format(startURL))
+	print("Dest  URL: {}".format(destURL))
+	print("Algorithm: {}".format(algorithm))
+	if algorithm in [3]:
+		print("Bound:     {}".format(bound))
+
+#Print help page	
+if(len(sys.argv) == 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help"):
+	helpMessage = """
+Usage: wiki-crawler.py [options] <start URL> <destination URL>
+Example: wiki-crawler.py -v -r -r
+
+===== General Options =====
+-h or --help			Display this help message and exit
+-v or --verbose			Verbose ouput
+
+===== URL replacements ====
+-r or --random			Selects a random Wikipedia article, use in place of start or destination URL
+
+==== Search Algorithms ====	Default algorithm is bi-directional breadth first search
+-a <mode> or --algorithm <mode>	Selects search algorithm
+-b <int>  or --bound <int>	Sets bound limit for bounded search (default: 6)
+
+	Search Modes:
+	0			Bi-directional breadth first search
+	1			Breadth first search from start URL
+	2			[NOT YET IMPLEMENTED] Inverted Breadth first search from goal URL
+	3			[NOT YET IMPLEMENTED] Bounded depth first search
+	"""
+	print(helpMessage)
+	exit()
+
+#Remove "wiki-crawler.py" from list of args
+sys.argv.pop(0)
+
+#Define starting parameters
+verbose = False
+startURL = ""
+destURL = ""
+bound = 6
+algorithm = 0
+
+#assert that there are enough arguments
+assert(len(sys.argv) >=2)
+
+#Handle options
+while(len(sys.argv) > 2):
+	curArg = sys.argv.pop(0)
 	
-def breadthFirstSearch(startURL,destURL):
+	if(curArg == '-v' or curArg == '--verbose'):
+		verbose = True
 	
-	#Set frontier
-	frontier = Frontier(startURL)
-	
-	#While there are unexplored nodes
-	while len(frontier.unexplored) > 0:
-		#get current node to expand
-		curNode = frontier.unexplored.pop(0)
-		#For all neighbors of current node that have not been explored
-		for neighbor in fetchOutgoingLinks(wikiBase+curNode.url):
-			if neighbor not in frontier.explored:
-				
-				#Create new node with url and pointer back to parent
-				newNode = Node(neighbor,curNode)
-				
-				#If neighbor url is destination, return full path.
-				if newNode.url == destURL:
-					return fetchFullPath(newNode)
-				#Otherwise update unexplored and explored
-				frontier.unexplored.append(newNode)
-				frontier.explored.append(neighbor)
-	#If frontier runs out, return failed path
-	return ['No Path']
+	if(curArg == '-a' or curArg == '--algorithm'):
+		try:
+			assert(int(sys.argv[0]) in list(range(4)))
+		except:
+			print("Invalid algorithm mode {}.".format(sys.argv[0]))
+			exit()
+		
+		algorithm = int(sys.argv.pop(0))
+	if(curArg == '-b' or curArg == '--bound'):
+		try:
+			assert(int(sys.argv[0])>0)
+		except:
+			print("Invalid search bound {}.".format(sys.argv[0]))
+			print("Must be positive integer.")
+			exit()
+		bound = int(sys.argv.pop(0))
 
-#Bi-directional breadth first search		
-def biDirectional(startURL,destURL):
+#Assert that there are still enough arguments
+try:
+	assert(len(sys.argv) == 2)
+except:
+	print("Must specify starting URL and destination URL")
+	print("Remaining Arguments: {}".format(sys.argv))
+	exit()
 
-	#Define frontiers
-	forFront = Frontier(startURL) #Forward search from startURL
-	invFront = Frontier(destURL) #Inverted search from destURL
+#Handle start and dest URLs
+for i,URL in enumerate(sys.argv):
+	if URL == '-r' or URL == '--random':
+		sys.argv[i] = getRandomArticle()
 
-	#While frontiers have unexplored nodes
-	while(len(forFront.unexplored) > 0 and len(invFront.unexplored) > 0):
-		#Forward search from start url
-		curNode = forFront.unexplored.pop(0)
-		for neighbor in fetchOutgoingLinks(wikiBase+curNode.url):
-			#Create new node with url and pointer back to parent
-			newNode = Node(neighbor,curNode)
-			
-			#If neighbor url is destination, return full path.
-			for invertNode in invFront.unexplored:
-				if newNode.url == invertNode.url:
-					return fetchFullPath(newNode) + list(reversed(fetchFullPath(invertNode)))[1:]
-			#Otherwise update unexplored and explored
-			forFront.unexplored.append(newNode)
-			forFront.explored.append(neighbor)
+#assign URLs
+startURL = '/wiki/'+sys.argv[0]
+destURL  = '/wiki/'+sys.argv[1]
 
-		#Inverted search from destination url
-		curNode = invFront.unexplored.pop(0)
-		for neighbor in fetchIncomingLinks(curNode.url):
-			#Create new node with url and pointer back to parent
-			newNode = Node(neighbor,curNode)
-			
-			#If neighbor url is destination, return full path.
-			for forwardNode in forFront.unexplored:
-				if newNode.url == forwardNode.url:
-					return fetchFullPath(forwardNode) + list(reversed(fetchFullPath(newNode)))[1:]
-			#Otherwise update unexplored and explored
-			invFront.unexplored.append(newNode)
-			invFront.explored.append(neighbor)
-	return ['No Path']		
+#Print params if verbose
+if verbose: 
+	printSearchParams()
+	print("Starting search...\n")
 
-
-#Check if verbose flag is set
-if("-v" in sys.argv or "--verbose" in sys.argv):
-	verbose = True
-	#Clean this up later
-	try:
-		sys.argv.remove("-v")
-	except:
-		pass
-	try:	
-		sys.argv.remove("--verbose")
-	except:
-		pass
-else:
-	verbose = False
-
-#Set starting and ending urls for search
-for i in range(1,3):
-	if(sys.argv[i] == '-r' or sys.argv[i] == '--random'):
-		randURL = requests.get(wikiBase+'/wiki/Special:Random').url[30:]
-		sys.argv[i] = randURL
-	
-startURL = '/wiki/' + sys.argv[1].replace(" ","_")
-destURL = '/wiki/' + sys.argv[2].replace(" ","_")
-
-#Print information if verbose
-if verbose:
-	print("Start URL:",startURL)
-	print("Destination URL:",destURL)
-	print("Beginning Search...")
-	startTime = time.time()
+startTime = time.time()
 
 #Run search
-path = biDirectional(startURL,destURL)
+path = ['No Path']
+algorithms = [biDirectional,breadthFirstSearch]
+path = algorithms[algorithm](startURL,destURL)
+endTime = time.time()
 
-#Print search time and data
-if verbose: print("Best path found in {} seconds!\n".format(time.time()-startTime))
-
-#Print path
+if verbose: print("Path found in {} seconds!".format(endTime-startTime))
 prettyPath(path)
+exit()
+if(algorithm == 0):
+	path = biDirectional(startURL,destURL)
+if(algorithm == 1):
+	path = breadthFirstSearch(startURL,destURL)
 
 
 		
+
+	
