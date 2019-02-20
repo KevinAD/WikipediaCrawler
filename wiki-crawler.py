@@ -2,8 +2,6 @@ from frontier import *
 from webCrawlers import *
 
 import requests, sys, time
-from bs4 import BeautifulSoup as bs
-from bs4 import SoupStrainer
 
 #Print path with character replacements
 def prettyPath(path):
@@ -74,12 +72,6 @@ def biDirectional(startURL,destURL):
 			invFront.explored.append(neighbor)
 	return ['No Path']		
 
-#assert that a correct number of arguments are given					
-assert(len(sys.argv) >= 3)
-
-#Set starting and ending urls for search
-startURL = '/wiki/' + sys.argv[1].replace(" ","_")
-destURL = '/wiki/' + sys.argv[2].replace(" ","_")
 
 #Check if verbose flag is set
 if("-v" in sys.argv or "--verbose" in sys.argv):
@@ -95,6 +87,15 @@ if("-v" in sys.argv or "--verbose" in sys.argv):
 		pass
 else:
 	verbose = False
+
+#Set starting and ending urls for search
+for i in range(1,3):
+	if(sys.argv[i] == '-r' or sys.argv[i] == '--random'):
+		randURL = requests.get(wikiBase+'/wiki/Special:Random').url[30:]
+		sys.argv[i] = randURL
+	
+startURL = '/wiki/' + sys.argv[1].replace(" ","_")
+destURL = '/wiki/' + sys.argv[2].replace(" ","_")
 
 #Print information if verbose
 if verbose:
