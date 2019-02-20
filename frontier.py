@@ -19,14 +19,3 @@ def fetchFullPath(node):
 		path.append(curNode.url)
 		curNode = curNode.parent
 	return list(reversed(path))
-
-		
-
-
-
-			
-
-			
-			
-		
-

@@ -94,7 +94,4 @@ if verbose: print("Best path found in {} seconds!\n".format(time.time()-startTim
 prettyPath(path)
 
 
-
-
-
 		
