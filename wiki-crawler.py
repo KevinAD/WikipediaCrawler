@@ -12,9 +12,9 @@ def prettyPath(path):
 #Print search parameters
 def printSearchParams():
 	algorithmNames = ['Bi Directional Breadth First', 'Breadth First']
-	print("Start URL: {}".format(startURL))
-	print("Dest  URL: {}".format(destURL))
-	print("Algorithm: {}".format(algorithm))
+	print("Start URL: {}".format(wikiBase + startURL))
+	print("Dest  URL: {}".format(wikiBase + destURL))
+	print("Algorithm: {}".format(algorithmNames[algorithm]))
 	if algorithm in [3]:
 		print("Bound:     {}".format(bound))
 
@@ -23,6 +23,9 @@ if(len(sys.argv) == 1 or sys.argv[1] == "-h" or sys.argv[1] == "--help"):
 	helpMessage = """
 Usage: wiki-crawler.py [options] <start URL> <destination URL>
 Example: wiki-crawler.py -v -r -r
+Example: wiki-crawler.py -v \"Colorado\" \"Chicago Cubs\"
+
+Note: You only need to input the last part of the wikipedia URL, everything that comes after \"/wiki/\"
 
 ===== General Options =====
 -h or --help			Display this help message and exit
@@ -95,8 +98,8 @@ for i,URL in enumerate(sys.argv):
 		sys.argv[i] = getRandomArticle()
 
 #assign URLs
-startURL = '/wiki/'+sys.argv[0]
-destURL  = '/wiki/'+sys.argv[1]
+startURL = ('/wiki/'+sys.argv[0]).replace(" ","_")
+destURL  = ('/wiki/'+sys.argv[1]).replace(" ","_")
 
 #Print params if verbose
 if verbose: 
